@@ -223,16 +223,16 @@ pagerank <- data.frame(pagerank_score = pr$vector) %>%
 betweenness
 pagerank
 ```
-3. *Community detection* is the problem of finding the natural divisions of a network into groups of nodes (or actors), called communities, such that there are many edges within groups and few edges between groups. I used Louvain cluster community detection which implements the multi-level modularity optimization algorithm for finding community structure. It is based on the modularity measure and a hierarchial approach. I run the detection on the top 3 words for each measurements above. \n
+3. *Community detection* is the problem of finding the natural divisions of a network into groups of nodes (or actors), called communities, such that there are many edges within groups and few edges between groups. I run the detection on the top 3 words for each measurements above. \n
 
 ```{r comunity, include=FALSE, echo=FALSE, warning=FALSE}
 g <- word_cor_g %>%
   filter(word1 == "heart" | word2 == "heart" | word1 == "winston" | word2 == "winston" | word1 == "half" | word2 == "half"| word1 == "added" | word2 == "added" )
 G = graph_from_data_frame(g)
 
-# The number of communities typically decreases as the resolution parameter (t) grows. This code uses cluster_louvain
-community = cluster_resolution(G, t = 1.5) #t is the time-scale parameter of the process which uncovers community structures at different resolutions
-coords = layout_with_fr(G) #larger values will result longer edges. Note that this is opposite to layout_with_fr
+
+community = cluster_resolution(G, t = 1.5) # The number of communities typically decreases as the resolution parameter (t) grows.
+coords = layout_with_fr(G) 
 ```
 ```{r G plot, echo=FALSE, warning=FALSE, fig.width=14, fig.height=10,}
 plot(G, vertex.color = membership(community), layout = coords)

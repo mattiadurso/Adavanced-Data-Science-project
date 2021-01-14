@@ -1,4 +1,3 @@
 # Advanced Data Science project, Jannuary 2021
-This is my project for the final exam.
-
-You can run each of the three parts separately if you run the introduction first.
+You don't need to download the datasets in order to run the code locally.
+The analysis is divided in three main partes, you can run each of them separately if you run the introduction first.

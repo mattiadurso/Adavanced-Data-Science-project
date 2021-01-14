@@ -165,7 +165,7 @@ After finding the most frequent bigrams, I wonder what are the most correlated w
 word_cor <- novels_token %>%
   group_by(word) %>%
   filter(n() >= 50) %>%
-  pairwise_cor(word, chapter, sort = TRUE) %>%
+  pairwise_cor(word, chapter, sort = TRUE) %>% #rivedere da sua lezioni
   na.omit()
 
 a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
@@ -258,7 +258,7 @@ frequency_matrix <- cor(frequency[, c(-1)], use = "pairwise.complete.obs") %>%
 # Sentiment analysis
 
 ##### Sentiment anlysis on the three novels
-Which are the main sentiments in the books? Of course these are distopyan books so I expect that the negative sentiments are the most present. I use the sum of the occurences of the words for each sentiment in order to highlight that. I use colors to highlight <span style="color: #F8766D;">negative</span> and <span style="color: #00BFC4;">positive</span> sentiments. Unexpectedly the most present sentiment is trust.
+Which are the main sentiments in the books? Of course these are distopyan books so I expect that the negative sentiments are the most present. I use the sum of the occurences of the words for each sentiment in order to highlight that. I use colors to highlight <span style="color: #9883E5;">negative</span> and <span style="color: #D0CE7C;">positive</span> sentiments. Unexpectedly the most present sentiment is trust.
 ```{r sentiments_in_the_book, echo=FALSE, collapse=TRUE, include=FALSE}
 novels_sentiment <- novels_token %>% 
   inner_join(get_sentiments("nrc")) %>%
@@ -291,6 +291,7 @@ p <- novels_counts %>%
                            "\nSentiment: ", sentiment))) +
   geom_col(show.legend = FALSE) +
   theme_classic() +
+  scale_fill_manual(values = c("#9883E5", "#D0CE7C")) +
   labs(x = "Sentiment\n\n", y = "# of occurences of that words") +
   theme(legend.position = "none",
         text = element_text(family = "Arial"),
@@ -359,6 +360,7 @@ p <- novels_sentiment %>%
   labs(x = "\nChapter", y = "Ratio") +
   theme_classic()+
   scale_x_continuous(breaks = c(0:9)*4)+
+  scale_fill_manual(values = c("#D5CDF4","#9883E5")) +
   theme(legend.position = "none",
         text = element_text(family = "Arial"),
         axis.text.x = element_text(vjust = 0.5))
@@ -388,7 +390,7 @@ ggplotly(p, tooltip = c("text")) %>%
 # Topic Modeling
 
 ##### Comparison of the topics of the three dystopian novels, have they some topics in common? 
-I use LDA algorithm in order to find the nine highest per-topic-per-word probabilities, called “beta”. This is an unsupervised method thus that each founded topic has not a label. I removed some words, such as the name of the characters, beacuse not helpful in order to label the topic founded.\n
+I use LDA algorithm in order to find the nine highest per-topic-per-word probabilities, called “beta”. This is an unsupervised method thus that each founded topic has not a label. I removed some words, such as the name of the characters, beacuse not helpful in order to label the topic founded. Recall the colors of <span style="color: #F8766D;">Nineteen eighty-four</span>, <span style="color: #00BFC4;">Brave New World</span> and <span style="color: #7A5C58;">The Handmaid's</span>. \n
 
 ```{r topic_modelling_versus, echo=FALSE,  include=FALSE, collapse=TRUE, warning=FALSE}
 #removing some useless words
@@ -417,6 +419,8 @@ top_terms <- book_topics_beta %>%
   group_by(topic) %>%
   slice(1:6) 
 
+colors <- c("#F8766D", "#7A5C58", "#F8766D", "#7A5C58", "#00BFC4", "#F8766D", "#00BFC4", "#00BFC4", "#7A5C58")
+
 top_terms %>%
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
@@ -424,6 +428,7 @@ top_terms %>%
   labs(title = "", x = "Terms\n", y = expression(beta)) + 
   theme(axis.text.y = element_blank(), axis.ticks = element_blank()) +
   scale_x_reordered(sep = "___") +
+  scale_fill_manual(values = colors) +
   coord_flip() +
   theme_classic()
 ```

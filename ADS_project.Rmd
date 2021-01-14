@@ -15,9 +15,9 @@ In this presentation we will analize three dystopian novels. We will analize the
 
 Short summary: \n
 
-*Nineteen eighty-four* is a dystopian novel by George Orwell published in 1949, which follows the life of Winston Smith, a low ranking member of 'the Party', who is frustrated by the omnipresent eyes of the party, and its ominous ruler Big Brother. 'Big Brother' controls every aspect of people's lives. It has invented the language 'Newspeak' in an attempt to completely eliminate political rebellion; created 'Throught crimes' to stop people even thinking of things considered rebellious. The party controls what people read, speak, say and do with the threat that if they disobey, they will be sent to the dreaded Room 101 as a looming punishment. This is the story of Winston Smith, a man who tried to run away from the party. More informations are available [here](https://en.wikipedia.org/wiki/Nineteen_Eighty-Four).\n
-
 *Brave New World* is a dystopian social science fiction novel by Aldous Huxley, written in 1931 and published in 1932. Largely set in a futuristic World State, whose citizens are environmentally engineered into an intelligence-based social hierarchy, the novel anticipates huge scientific advancements in reproductive technology, sleep-learning, psychological manipulation and classical conditioning that are combined to make a dystopian society which is challenged by only a single individual: the story's protagonist. The only remnant of the ancient society is a small minority of naturally reproducing humans who lived on a small reserve, they are called "Indians". More informations are available [here](https://en.wikipedia.org/wiki/Brave_New_World).\n
+
+*Nineteen eighty-four* is a dystopian novel by George Orwell published in 1949, which follows the life of Winston Smith, a low ranking member of 'the Party', who is frustrated by the omnipresent eyes of the party, and its ominous ruler Big Brother. 'Big Brother' controls every aspect of people's lives. It has invented the language 'Newspeak' in an attempt to completely eliminate political rebellion; created 'Throught crimes' to stop people even thinking of things considered rebellious. The party controls what people read, speak, say and do with the threat that if they disobey, they will be sent to the dreaded Room 101 as a looming punishment. This is the story of Winston Smith, a man who tried to run away from the party. More informations are available [here](https://en.wikipedia.org/wiki/Nineteen_Eighty-Four).\n
 
 *The Handmaid's* is a dystopian novel by Canadian author Margaret Atwood, published in 1985. It is set at the end of the XX century when the world superpowers are exhausted by war and the Earth is devastated by radioactive and chemical pollution; discontent is spreading among the population that has reached zero-born growth. In particular the novel is set in New England, in a strongly patriarchal, quasi-Christian, totalitarian state, known as Gilead, that has overthrown the United States government. The central character and narrator is a woman named Offred, one of the group known as "handmaid's", who are forcibly assigned to produce children for the "commanders" – the ruling class of men. The novel explores themes of subjugated women in a patriarchal society and the various means by which they resist and attempt to gain individuality and independence. More informations are available [here](https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale).
 
@@ -157,6 +157,7 @@ ggplotly(p, tooltip = c("text")) %>%
          xaxis = list(fixedrange = TRUE))
 ```
 
+
 ##### Correlation Graph 
 After finding the most frequent bigrams, I wonder what are the most correlated words in these three distopyan novels. In order to find that words I used a graph to visualize the clusters and run some measurements such as betweeness centrality, Pagerank and Community detection. Fun fact, the correlation graph of the words with the strongest correlation of the three dystopian novels recalls an eye as such as the eye of those who control the population which is quite disturbing.\n 
 
@@ -221,7 +222,7 @@ pagerank <- data.frame(pagerank_score = pr$vector) %>%
 betweenness
 pagerank
 ```
-3. *Community detection* is the problem of finding the natural divisions of a network into groups of nodes (or actors), called communities, such that there are many edges within groups and few edges between groups.  I run the detection on the top 3 words for each measurements above.
+3. *Community detection* is the problem of finding the natural divisions of a network into groups of nodes (or actors), called communities, such that there are many edges within groups and few edges between groups. I used Louvain cluster community detection which implements the multi-level modularity optimization algorithm for finding community structure. It is based on the modularity measure and a hierarchial approach. I run the detection on the top 3 words for each measurements above. \n
 
 ```{r comunity, include=FALSE, echo=FALSE, warning=FALSE}
 g <- word_cor_g %>%
@@ -241,7 +242,7 @@ plot(G, vertex.color = membership(community), layout=coords)
 
 
 ##### Correlation between the novels, how these novels are related?
-I wonder how much this novels are related. At high school I have studied this novels knowing they were similar but I never had the chance to deepen this bond. As you can see the novels are strongly related despite being written a few decades later. Probably this happens because the authors talk about similar topics and consequently share the same words or because the authors were inspired by the other novels considered in this analysis.\n
+I wonder how much this novels are related. At high school I have studied this novels knowing they were similar but I never had the chance to deepen this bond. As you can see the novels are strongly related despite being written a few decades later. Probably this happens because the authors talk about similar topics and consequently share the same words or because the authors were inspired by the other novels considered in this analysis (recall the novels have been published respectively in 1932, 1949, 1985).\n
 
 ```{r corrplot, echo=FALSE, warning=FALSE}
 frequency <- novels_token %>%
@@ -315,6 +316,19 @@ ggplotly(p, tooltip = c("text")) %>%
   layout(font = font,
          yaxis = list(fixedrange = TRUE),
          xaxis = list(fixedrange = TRUE))
+```
+
+To find out why trust is the most present feeling, I dug deeper. The result is that the first 10 words that convey trust have this meaning because they are taken out of their context. In conclusion it is a false positive.
+```{r trust_for_real, echo=FALSE, include=FALSE, warning=FALSE}
+most_used_trust_words <- novels_token %>% 
+  inner_join(get_sentiments("nrc")) %>%
+  count(word, book, sentiment, sort = TRUE) %>%
+  arrange(sentiment) %>%
+  filter(sentiment == "trust") %>%
+  slice(1:10)
+```
+```{r trust_plot, echo=FALSE, warning=FALSE}
+most_used_trust_words
 ```
 
 ##### Moving from the books to the chapters, which are the most negatve chapters? 
@@ -409,7 +423,7 @@ top_terms %>%
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~ topic, scales = "free") +
-  labs(title = "", x = "Terms\n", y = "\nBeta") + 
+  labs(title = "", x = "Terms\n", y = expression(beta)) + 
   theme(axis.text.y = element_blank(), axis.ticks = element_blank()) +
   scale_x_reordered(sep = "___") +
   coord_flip() +

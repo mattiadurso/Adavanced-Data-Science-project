@@ -1,0 +1,437 @@
+---
+title: "An analysis of some dystopian novels"
+author: '*D''Urso Mattia*'
+date: '*January 18, 2021*'
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+# Introduction
+In this presentation we will analize three dystopian novels. We will analize the frequency of the words and what kind of sentiment they convey. After that, there will be a comparison between the topics of the novels. The considerated novels are Nineteen eighty-four, Brave New World and The Handmaid's. All the data are available [here](https://github.com/mattiadurso/ads_project).\n\n
+
+
+Short summary: \n
+
+*Nineteen eighty-four* is a dystopian novel by George Orwell published in 1949, which follows the life of Winston Smith, a low ranking member of 'the Party', who is frustrated by the omnipresent eyes of the party, and its ominous ruler Big Brother. 'Big Brother' controls every aspect of people's lives. It has invented the language 'Newspeak' in an attempt to completely eliminate political rebellion; created 'Throught crimes' to stop people even thinking of things considered rebellious. The party controls what people read, speak, say and do with the threat that if they disobey, they will be sent to the dreaded Room 101 as a looming punishment. This is the story of Winston Smith, a man who tried to run away from the party. More informations are available [here](https://en.wikipedia.org/wiki/Nineteen_Eighty-Four).\n
+
+*Brave New World* is a dystopian social science fiction novel by Aldous Huxley, written in 1931 and published in 1932. Largely set in a futuristic World State, whose citizens are environmentally engineered into an intelligence-based social hierarchy, the novel anticipates huge scientific advancements in reproductive technology, sleep-learning, psychological manipulation and classical conditioning that are combined to make a dystopian society which is challenged by only a single individual: the story's protagonist. The only remnant of the ancient society is a small minority of naturally reproducing humans who lived on a small reserve, they are called "Indians". More informations are available [here](https://en.wikipedia.org/wiki/Brave_New_World).\n
+
+*The Handmaid's* is a dystopian novel by Canadian author Margaret Atwood, published in 1985. It is set at the end of the XX century when the world superpowers are exhausted by war and the Earth is devastated by radioactive and chemical pollution; discontent is spreading among the population that has reached zero-born growth. In particular the novel is set in New England, in a strongly patriarchal, quasi-Christian, totalitarian state, known as Gilead, that has overthrown the United States government. The central character and narrator is a woman named Offred, one of the group known as "handmaid's", who are forcibly assigned to produce children for the "commanders" – the ruling class of men. The novel explores themes of subjugated women in a patriarchal society and the various means by which they resist and attempt to gain individuality and independence. More informations are available [here](https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale).
+
+
+```{r import, include=FALSE} 
+library(dplyr)
+library(tidytext)
+library(tidyverse)
+library(stringr)
+library(gridExtra)
+library(wordcloud)
+library(topicmodels)
+library(tibble)
+library(stopwords)
+library(stm)
+library(ggthemes)
+library(plotly)
+library(extrafont)
+library(reshape2)
+library(knitr)
+library(corrplot)
+library(tm)
+library(scales)
+library(igraph)
+library(tidygraph)
+library(ggraph)
+library(textdata)
+library(widyr)
+library(resolution)
+``` 
+```{r prepare, include=FALSE}
+#Loading dataset
+ntef <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/ntef.txt", stringsAsFactors = FALSE, skip = 34) %>%
+  rename(text = PART.ONE)%>%
+  mutate(color = "#F8766D") #Nineteen eighty-four, url -> http://gutenberg.net.au/ebooks01/0100021.txt
+
+bnw <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/bnw.txt", stringsAsFactors = FALSE, skip = 82) %>%
+  rename(text = BRAVE.NEW.WORLD) %>%
+  mutate(color = "#00BFC4") #Brave New World
+
+thms <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/thms.txt", stringsAsFactors = FALSE, skip = 8)%>%
+  rename(text = Night) %>%
+  mutate(color = "#7A5C58")  #The Handmaid's
+
+#tokenizing datasets
+prepare_data <- function(data, book){ data %>%
+  mutate(book = book,
+         linenumber = row_number(),
+         chapter = cumsum(
+           str_detect(text, regex("^(Chapter|CHAPTER) [\\divxlc]", ignore_case = TRUE))))}
+
+ntef <- prepare_data(ntef, "Nineteen eighty-four")
+bnw <- prepare_data(bnw, "Brave New World")
+thms <- prepare_data(thms, "The Handmaid's")
+
+
+ 
+ntef_token <- ntef %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) 
+
+bnw_token <- bnw %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) 
+
+thms_token <- thms %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) 
+
+
+novels_token <- ntef_token %>%
+  rbind(bnw_token) %>%
+  rbind(thms_token)
+
+novels_raw <- ntef %>%
+  rbind(bnw) %>%
+  rbind(thms)
+```
+
+# Text mining
+
+##### Frequency analysis with wordcloud 
+This is a wordcloud, a collection, or cluster, of words depicted in different sizes. The biggest and boldest the word appears, the more often it's mentioned within a given text. As you can see the biggest words are "Winston", the name of the main character of <span style="color: #F8766D;">Nineteen eighty-four</span>, "party" and "time", two of the main topics of that book. You can see other words such as "bernard" or "savage" that belong to <span style="color: #00BFC4;">Brave New World</span> and "time", aunt" or "women" which belongs to <span style="color: #7A5C58;">The Handmaid's</span>.\n
+
+```{r wordcloud_words, echo=FALSE, collapse=TRUE, warning=FALSE}
+words_for_cloud <- novels_token %>%
+  count(word, book, color, sort = TRUE) 
+
+wordcloud(words = words_for_cloud$word, freq = words_for_cloud$n, min.freq = 60,
+          max.words=200, random.order=FALSE, random.color = FALSE, rot.per=0.35, 
+          colors=(words_for_cloud$color), ordered.colors=TRUE)
+```
+
+
+##### Bigrams analysis 
+In this case I consider bigrams. This is a plot which each point corrispondes to a bigram (you can check which of them hovering with mouse). It is interesting that in the top 10 most used bigrams there are only one bigram that belongs to Nineteen eighty-four, which is the longest book. It's curious that only few bigrams of The Handmaid's are big, the others bigrams have occurences comparable to the others. Basically the bigrams with a significant number of occurrences are names such as "Aunt Lydia" or "Mustapha Mond". The dashed line is the boundary between the top 10 bigrams and the others.\n
+
+```{r most_used_bigrams, echo=FALSE,  include=FALSE, collapse=TRUE, warning=FALSE}
+novels_counts_bigram <- novels_raw %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  count(bigram, book, color, sort = TRUE) %>%
+  filter(n > 3) %>% #bigrams with at least 3 occurrences, in order to have lighter graphic
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)  %>%
+  na.omit() %>%
+  unite("bigram", word1, word2, sep = " ") 
+
+
+p <- novels_counts_bigram %>%
+  ggplot(aes(book, n, color = book,
+             text = paste0("Bigram: ", bigram,
+                           "\n Occurrences: ", n))) +
+  geom_point(position = position_jitter(width = 0.48)) +
+  theme_classic() +
+  theme(legend.position = "none") +
+  labs(x = "Books",
+        y = "Occourrences") +
+  scale_color_manual(values = c("#00BFC4", "#F8766D", "#7A5C58")) +
+  geom_hline(yintercept = 13, label = "Top 10", alpha = .8, linetype="longdash", color="#D0CE7C") #
+```
+```{r plot_bigrams, echo=FALSE, collapse=TRUE, warning=FALSE}
+font = list(
+  size = 15,
+  color = "white"
+)
+
+label = list(
+  bordercolor = "transparent",
+  font = font
+)
+ggplotly(p, tooltip = c("text")) %>%
+  config(displayModeBar = FALSE) %>%
+  style(hoverlabel = label) %>%
+  layout(font = font,
+         yaxis = list(fixedrange = TRUE),
+         xaxis = list(fixedrange = TRUE))
+```
+
+##### Correlation Graph 
+After finding the most frequent bigrams, I wonder what are the most correlated words in these three distopyan novels. In order to find that words I used a graph to visualize the clusters and run some measurements such as betweeness centrality, Pagerank and Community detection. Fun fact, the correlation graph of the words with the strongest correlation of the three dystopian novels recalls an eye as such as the eye of those who control the population which is quite disturbing.\n 
+
+```{r correlation_graph, echo=FALSE, warning=FALSE, fig.width=14, fig.height=10}
+word_cor <- novels_token %>%
+  group_by(word) %>%
+  filter(n() >= 50) %>%
+  pairwise_cor(word, chapter, sort = TRUE) %>%
+  na.omit()
+
+a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
+
+word_cor %>%
+  filter(correlation > 0.65) %>%
+  as_tbl_graph() %>%
+  ggraph(layout = "kk") +
+  geom_edge_link(aes(edge_alpha = correlation), show.legend = FALSE, arrow = a) +
+  geom_node_point(color = "lightblue", size = 1) +
+  geom_node_text(aes(label = name), repel = TRUE) +
+  theme_void()
+```
+
+##### Centrality measurements 
+The measuremets that I used are explained below:\n
+
+1. *Betweeness centrality* allows to find the extent to which a vertex lies on paths between other vertices. This measure is very important beacause show the nodes that whose removal from the network will most disrupt communications between other vertices because these words are the links between clusters. Words with high betweeness score are similar to brokers in the graph.\n 
+
+2. In *Pagerank* algorithm a node is important if it linked from other important nodes and links parsimonious nodes or if it is highly linked.
+
+The word with the highest value in both cases is "heart" but this word is used only 67 times on 266.435 total words. This shows that the most used words are not the most important.
+```{r bet_com, echo=FALSE, include=FALSE, collapse=TRUE, warning=FALSE}
+word_cor_g <- word_cor %>%
+  rename(word1 = item1, word2 = item2, n = correlation) %>%
+  mutate(n = round(n*100)) %>%
+  filter(n > 65)
+
+#betwennes
+g <- word_cor_g %>%
+  as_tbl_graph()
+
+v <- as_tibble(g) %>%
+  mutate(v = row_number())
+
+b <- betweenness(g)
+names(b) = 1:vcount(g)
+betweenness <- data.frame(betweenness_score = round(b, 3)) %>%
+  mutate(v = row_number()) %>%
+  full_join(v) %>%
+  arrange(desc(betweenness_score)) %>%
+  mutate(word = name) %>%
+  select(word, betweenness_score) %>%
+  head()
+
+#pagerank
+pr <- page_rank(g)
+pagerank <- data.frame(pagerank_score = pr$vector) %>%
+  arrange(desc(pagerank_score)) %>%
+  head()
+
+```
+```{r misure, echo=FALSE, warning=FALSE, collapse=FALSE}
+betweenness
+pagerank
+```
+3. *Community detection* is the problem of finding the natural divisions of a network into groups of nodes (or actors), called communities, such that there are many edges within groups and few edges between groups.  I run the detection on the top 3 words for each measurements above.
+
+```{r comunity, include=FALSE, echo=FALSE, warning=FALSE}
+g <- word_cor_g %>%
+  filter(word1 == "heart" | word2 == "heart" | word1 == "winston" | word2 == "winston" | word1 == "half" | word2 == "half"| word1 == "added" | word2 == "added" )
+G = graph_from_data_frame(g)
+
+# The number of communities typically decreases as the resolution parameter (t) grows. This code uses cluster_louvain
+community = cluster_resolution(G, t = 1.5) #t is the time-scale parameter of the process which uncovers community structures at different resolutions
+coords = layout_with_fr(G) #larger values will result longer edges. Note that this is opposite to layout_with_fr
+```
+
+```{r G plot, echo=FALSE, warning=FALSE, fig.width=14, fig.height=10,}
+plot(G, vertex.color = membership(community), layout=coords)
+```
+
+
+
+
+##### Correlation between the novels, how these novels are related?
+I wonder how much this novels are related. At high school I have studied this novels knowing they were similar but I never had the chance to deepen this bond. As you can see the novels are strongly related despite being written a few decades later. Probably this happens because the authors talk about similar topics and consequently share the same words or because the authors were inspired by the other novels considered in this analysis.\n
+
+```{r corrplot, echo=FALSE, warning=FALSE}
+frequency <- novels_token %>%
+  count(book, word, sort = TRUE) %>%
+  group_by(book) %>%
+  mutate(proportion = n / sum(n)) %>% 
+  select(-n) %>% 
+  spread(book, proportion) 
+
+frequency_matrix <- cor(frequency[, c(-1)], use = "pairwise.complete.obs") %>%
+  corrplot(method = "number")
+```
+
+
+# Sentiment analysis
+
+##### Sentiment anlysis on the three novels
+Which are the main sentiments in the books? Of course these are distopyan books so I expect that the negative sentiments are the most present. I use the sum of the occurences of the words for each sentiment in order to highlight that. I use colors to highlight <span style="color: #F8766D;">negative</span> and <span style="color: #00BFC4;">positive</span> sentiments. Unexpectedly the most present sentiment is trust.
+```{r sentiments_in_the_book, echo=FALSE, collapse=TRUE, include=FALSE}
+novels_sentiment <- novels_token %>% 
+  inner_join(get_sentiments("nrc")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  arrange(sentiment) 
+novels_sentiment <- aggregate(n ~ sentiment, novels_sentiment,  sum)
+novels_sentiment
+
+novels_sentiment_words <- novels_token %>% 
+  inner_join(get_sentiments("nrc")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  group_by(sentiment) %>%
+  slice(2:2) %>% #second word is more significative
+  select(word, sentiment)
+
+novels_sentiment_words
+
+novels_counts <- novels_sentiment %>% 
+  full_join(novels_sentiment_words) %>%
+  mutate(isPositive = (sentiment == "trust" | sentiment == "surprise" | sentiment == "positive" | sentiment == "joy")) %>%
+  filter(sentiment != "positive", sentiment != "negative") %>%
+  mutate(sentiment = reorder(sentiment, n)) %>%
+  arrange(desc(n))
+novels_counts
+
+p <- novels_counts %>%
+  ggplot(aes(sentiment, n, fill = isPositive,
+             text = paste0("Most used word: ", word,
+                           "\nOccurences: ", n,
+                           "\nSentiment: ", sentiment))) +
+  geom_col(show.legend = FALSE) +
+  theme_classic() +
+  labs(x = "Sentiment\n\n", y = "# of occurences of that words") +
+  theme(legend.position = "none",
+        text = element_text(family="Arial"),
+        plot.title = element_text(hjust = 0.5)) +
+  coord_flip() 
+```
+```{r sentiments_in_the_bookplot, echo=FALSE, collapse=TRUE, warning=FALSE}
+font = list(
+  size = 15,
+  color = "white"
+)
+
+label = list(
+  bordercolor = "transparent",
+  font = font
+)
+
+ggplotly(p, tooltip = c("text")) %>%
+  config(displayModeBar = FALSE) %>%
+  style(hoverlabel = label) %>%
+  layout(font = font,
+         yaxis = list(fixedrange = TRUE),
+         xaxis = list(fixedrange = TRUE))
+```
+
+##### Moving from the books to the chapters, which are the most negatve chapters? 
+For each book I have highlighted the chapter with the highest number of negative words in order to find the most negative chapter. Below there is a short summary about what happens in those chapters.\n
+
++ *Brave New World, 7<sup>th</sup> chapter:* Bernand and Lenina are on vacation in the Indian village of Malpais. Here they witness wild dance ending with a coyote-masked shaman whipping a young man to death: a blood sacrifice to bring rain and grow corn. After that they meet a young man who talks like a Shakespeare character and tells them that his mother, Linda, is from "The Other Place". The young savage introduces them to Linda who tells Lenina and Bernard about her the strange story of her being kidnapped by Indians at an early age. She spent much of her life in her Reservation where she gave birth to her son, John, the young savage.  \n
+
++ *Nineteen eighty-four, 25<sup>th</sup> chapter:* Winston is inside the ministry of love, and is about to be taken to room 101, the torture and re-education room. He discovers that the Party had been watching him very closely for seven years and that they even have soundtracks and photographs of him and Julia. He realizes the futility of his decision of him to set himself up against the Party. Then O'brien proceeds with the torture that leads to his re-education. This torture consists in his greatest fear: rats. \n
+
++ *The Handmaid's, 18<sup>th</sup> chapter:* This chapter is a stream of thoughts of the protagonist who thinks of her beloved Luke. These are her thoughts in a moment of despair when she thinks of her husband who was probably kidnapped by "Eyes", the secret services of the regime, and probably tortured and executed. She thinks back to how she felt about him and the fact that this is not right. \n
+
+
+```{r most_negative_chapters, echo=FALSE, collapse=TRUE, include=FALSE, warning=FALSE}
+novels_sentiment <- novels_token %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = chapter, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(ratio = negative / (positive + negative)) %>%
+  rename(chapter = index) %>%
+  arrange(desc(ratio))  %>%
+  mutate(isNegative = ((chapter == 7 & book == "Brave New World") | (chapter == 25 & book == "Nineteen eighty-four") | (chapter == 18 & book == "The Handmaid's")))  
+
+p <- novels_sentiment %>%
+  ggplot(aes(chapter, ratio, fill = isNegative,
+            text = paste0("Chapter: ", chapter,
+                          "\nRatio: ", round(ratio,3)))) + 
+  geom_col(aes(linetype = isNegative), show.legend = FALSE) +
+  facet_wrap(~book, ncol = 3, scales = "free_x") +
+  labs(x = "\nChapter", y = "Ratio") +
+  theme_classic()+
+  scale_x_continuous(breaks = c(0:9)*4)+
+  theme(legend.position = "none",
+        text = element_text(family="Arial"),
+        axis.text.x = element_text(vjust = 0.5))
+
+```
+```{r most_negative_chapters_plot, echo=FALSE, collapse=TRUE, warning=FALSE, fig.height=3, fig.width=9}
+font = list(
+  size = 15,
+  color = "white"
+)
+
+label = list(
+  bordercolor = "transparent",
+  font = font
+)
+
+ggplotly(p, tooltip = c("text")) %>%
+  config(displayModeBar = FALSE) %>%
+  style(hoverlabel = label) %>%
+  layout(font = font,
+         xaxis = list(fixedrange = TRUE),
+         yaxis = list(fixedrange = TRUE))
+
+```
+
+
+# Topic Modeling
+
+##### Comparison of the topics of the three dystopian novels, have they some topics in common? 
+I use LDA algorithm in order to find the nine highest per-topic-per-word probabilities, called “beta”. This is an unsupervised method thus that each founded topic has not a label. I removed some words, such as the name of the characters, beacuse not helpful in order to label the topic founded.\n
+
+```{r topic_modelling_versus, echo=FALSE,  include=FALSE, collapse=TRUE, warning=FALSE}
+#removing some useless words
+my_stop <- c("winston", "savage", "lenina", "bernard", "o'brien", "time")
+
+my_stop_df <- data.frame(word = my_stop)
+
+novels_token_topic <- novels_token %>%
+  anti_join(my_stop_df)
+
+word_counts <- novels_token_topic %>%
+  count(book, word, sort = TRUE) %>%
+  ungroup()
+
+book_dtm <- word_counts %>%
+  cast_dtm(book, word, n)
+
+book_lda <- LDA(book_dtm, k = 9, control = list(seed = 1234)) # k = n topics da cercare
+
+book_topics_beta <- tidy(book_lda, matrix = "beta")
+```
+
+```{r topic_modelling_versus_plot, echo=FALSE,   collapse=TRUE, warning=FALSE}
+top_terms <- book_topics_beta %>%
+  mutate(word = term, term = reorder_within(term, beta, topic)) %>%
+  arrange(desc(beta)) %>%
+  group_by(topic) %>%
+  slice(1:6) 
+
+top_terms %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  labs(title = "", x = "Terms\n", y = "\nBeta") + 
+  theme(axis.text.y = element_blank(), axis.ticks = element_blank()) +
+  scale_x_reordered(sep = "___") +
+  coord_flip() +
+  theme_classic()
+```
+
+##### How can I assign each topic to a book?
+In order to label the topics that I found above with betas I examinate the per-document-per-topic probabilities, called “gamma”. We notice that all of the topics are uniquely identified ad assigned to a a single chapter each. This makes easier link words to their respective book and give them any meaning.\n
+
+```{r topic_modelling_versus_boxplot, echo=FALSE,   collapse=TRUE, warning=FALSE}
+book_topics_gamma <- tidy(book_lda, matrix = "gamma")
+
+chapters_gamma <- book_topics_gamma %>%
+  separate(document, c("title"), sep = "_", convert = TRUE)
+
+chapters_gamma %>%
+  ggplot(aes(factor(topic), gamma)) +
+  geom_boxplot() +
+  facet_wrap(~ title) +
+  labs(x = "topic", y = expression(gamma)) +
+  theme_classic()
+```
+
+# Conclusions
+This analysis proves that through data science we are able to extract all the information necessary to understand a text in a sufficiently precise way and find out its secrets. We were able to find the word frequency and the most related words in order to have a shallow idea of the topics of the book. We can understand the sentiment of a text with binary (negative/positive) and multiple precision (look at Sentiment analysis part). Finally, we can study more deeply the book with topic modeling in order to better understand the topic of the texts. 

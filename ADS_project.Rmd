@@ -15,11 +15,11 @@ In this presentation we will analize three dystopian novels. We will analize the
 
 Short summary: \n
 
-*Brave New World* is a dystopian social science fiction novel by Aldous Huxley, written in 1931 and published in 1932. Largely set in a futuristic World State, whose citizens are environmentally engineered into an intelligence-based social hierarchy, the novel anticipates huge scientific advancements in reproductive technology, sleep-learning, psychological manipulation and classical conditioning that are combined to make a dystopian society which is challenged by only a single individual: the story's protagonist. The only remnant of the ancient society is a small minority of naturally reproducing humans who lived on a small reserve, they are called "Indians". More informations are available [here](https://en.wikipedia.org/wiki/Brave_New_World).\n
+*Brave New World* is a dystopian social science fiction novel by Aldous Huxley, written in 1931 and published in 1932. Largely set in a futuristic World State, whose citizens are environmentally engineered into an intelligence-based social hierarchy, the novel anticipates huge scientific advancements in reproductive technology, sleep-learning, psychological manipulation and classical conditioning that are combined to make a dystopian society which is challenged by only a single individual: the story's protagonist. The only remnant of the ancient society is a small minority of naturally reproducing humans who lived on a small reserve, they are called "Indians". The two main characters are Lenina Crowne and Bernarnd Marx which have a sort of relationship. More information are available [here](https://en.wikipedia.org/wiki/Brave_New_World).\n
 
-*Nineteen eighty-four* is a dystopian novel by George Orwell published in 1949, which follows the life of Winston Smith, a low ranking member of 'the Party', who is frustrated by the omnipresent eyes of the party, and its ominous ruler Big Brother. 'Big Brother' controls every aspect of people's lives. It has invented the language 'Newspeak' in an attempt to completely eliminate political rebellion; created 'Throught crimes' to stop people even thinking of things considered rebellious. The party controls what people read, speak, say and do with the threat that if they disobey, they will be sent to the dreaded Room 101 as a looming punishment. This is the story of Winston Smith, a man who tried to run away from the party. More informations are available [here](https://en.wikipedia.org/wiki/Nineteen_Eighty-Four).\n
+*Nineteen eighty-four* is a dystopian novel by George Orwell published in 1949, which follows the life of Winston Smith, a low ranking member of 'the Party', who is frustrated by the omnipresent eyes of the party, and its ominous ruler Big Brother. 'Big Brother' controls every aspect of people's lives. It has invented the language 'Newspeak' in an attempt to completely eliminate political rebellion; created 'Throught crimes' to stop people even thinking of things considered rebellious. The party controls what people read, speak, say and do with the threat that if they disobey, they will be sent to the dreaded Room 101 as a looming punishment. This is the story of Winston Smith, a man who tried to run away from the party. More information are available [here](https://en.wikipedia.org/wiki/Nineteen_Eighty-Four).\n
 
-*The Handmaid's* is a dystopian novel by Canadian author Margaret Atwood, published in 1985. It is set at the end of the XX century when the world superpowers are exhausted by war and the Earth is devastated by radioactive and chemical pollution; discontent is spreading among the population that has reached zero-born growth. In particular the novel is set in New England, in a strongly patriarchal, quasi-Christian, totalitarian state, known as Gilead, that has overthrown the United States government. The central character and narrator is a woman named Offred, one of the group known as "handmaid's", who are forcibly assigned to produce children for the "commanders" – the ruling class of men. The novel explores themes of subjugated women in a patriarchal society and the various means by which they resist and attempt to gain individuality and independence. More informations are available [here](https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale).
+*The Handmaid's* is a dystopian novel by Canadian author Margaret Atwood, published in 1985. It is set at the end of the XX century when the world superpowers are exhausted by war and the Earth is devastated by radioactive and chemical pollution; discontent is spreading among the population that has reached zero-born growth. In particular the novel is set in New England, in a strongly patriarchal, quasi-Christian, totalitarian state, known as Gilead, that has overthrown the United States government. The central character and narrator is a woman named Offred, one of the group known as "handmaid's", who are forcibly assigned to produce children for the "commanders" – the ruling class of men. The novel explores themes of subjugated women in a patriarchal society and the various means by which they resist and attempt to gain individuality and independence. More information are available [here](https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale).
 
 
 ```{r import, include=FALSE} 
@@ -52,7 +52,7 @@ library(resolution)
 #Loading dataset
 ntef <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/ntef.txt", stringsAsFactors = FALSE, skip = 34) %>%
   rename(text = PART.ONE)%>%
-  mutate(color = "#F8766D") #Nineteen eighty-four, url -> http://gutenberg.net.au/ebooks01/0100021.txt
+  mutate(color = "#F8766D") #Nineteen eighty-four
 
 bnw <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/bnw.txt", stringsAsFactors = FALSE, skip = 82) %>%
   rename(text = BRAVE.NEW.WORLD) %>%
@@ -60,9 +60,9 @@ bnw <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/mai
 
 thms <- read.delim("https://raw.githubusercontent.com/mattiadurso/ads_project/main/thms.txt", stringsAsFactors = FALSE, skip = 8)%>%
   rename(text = Night) %>%
-  mutate(color = "#7A5C58")  #The Handmaid's
+  mutate(color = "#7A5C58") #The Handmaid's
 
-#tokenizing datasets
+#unnest tokens
 prepare_data <- function(data, book){ data %>%
   mutate(book = book,
          linenumber = row_number(),
@@ -107,8 +107,8 @@ words_for_cloud <- novels_token %>%
   count(word, book, color, sort = TRUE) 
 
 wordcloud(words = words_for_cloud$word, freq = words_for_cloud$n, min.freq = 60,
-          max.words=200, random.order=FALSE, random.color = FALSE, rot.per=0.35, 
-          colors=(words_for_cloud$color), ordered.colors=TRUE)
+          max.words = 200, random.order = FALSE, random.color = FALSE, rot.per = 0.35, 
+          colors = (words_for_cloud$color), ordered.colors = TRUE)
 ```
 
 
@@ -119,7 +119,7 @@ In this case I consider bigrams. This is a plot which each point corrispondes to
 novels_counts_bigram <- novels_raw %>%
   unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
   count(bigram, book, color, sort = TRUE) %>%
-  filter(n > 3) %>% #bigrams with at least 3 occurrences, in order to have lighter graphic
+  filter(n > 3) %>% #bigrams with at least 4 occurrences, in order to have lighter graphic
   separate(bigram, c("word1", "word2"), sep = " ") %>%
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2 %in% stop_words$word)  %>%
@@ -137,7 +137,7 @@ p <- novels_counts_bigram %>%
   labs(x = "Books",
         y = "Occourrences") +
   scale_color_manual(values = c("#00BFC4", "#F8766D", "#7A5C58")) +
-  geom_hline(yintercept = 13, label = "Top 10", alpha = .8, linetype="longdash", color="#D0CE7C") #
+  geom_hline(yintercept = 13, label = "Top 10", alpha = .8, linetype ="longdash", color = "#D0CE7C") 
 ```
 ```{r plot_bigrams, echo=FALSE, collapse=TRUE, warning=FALSE}
 font = list(
@@ -179,6 +179,7 @@ word_cor %>%
   geom_node_text(aes(label = name), repel = TRUE) +
   theme_void()
 ```
+
 
 ##### Centrality measurements 
 The measuremets that I used are explained below:\n
@@ -233,12 +234,9 @@ G = graph_from_data_frame(g)
 community = cluster_resolution(G, t = 1.5) #t is the time-scale parameter of the process which uncovers community structures at different resolutions
 coords = layout_with_fr(G) #larger values will result longer edges. Note that this is opposite to layout_with_fr
 ```
-
 ```{r G plot, echo=FALSE, warning=FALSE, fig.width=14, fig.height=10,}
-plot(G, vertex.color = membership(community), layout=coords)
+plot(G, vertex.color = membership(community), layout = coords)
 ```
-
-
 
 
 ##### Correlation between the novels, how these novels are related?
@@ -273,7 +271,7 @@ novels_sentiment_words <- novels_token %>%
   inner_join(get_sentiments("nrc")) %>%
   count(word, sentiment, sort = TRUE) %>%
   group_by(sentiment) %>%
-  slice(2:2) %>% #second word is more significative
+  slice(2:2) %>% #second word is more significant
   select(word, sentiment)
 
 novels_sentiment_words
@@ -295,7 +293,7 @@ p <- novels_counts %>%
   theme_classic() +
   labs(x = "Sentiment\n\n", y = "# of occurences of that words") +
   theme(legend.position = "none",
-        text = element_text(family="Arial"),
+        text = element_text(family = "Arial"),
         plot.title = element_text(hjust = 0.5)) +
   coord_flip() 
 ```
@@ -331,10 +329,11 @@ most_used_trust_words <- novels_token %>%
 most_used_trust_words
 ```
 
+
 ##### Moving from the books to the chapters, which are the most negatve chapters? 
 For each book I have highlighted the chapter with the highest number of negative words in order to find the most negative chapter. Below there is a short summary about what happens in those chapters.\n
 
-+ *Brave New World, 7<sup>th</sup> chapter:* Bernand and Lenina are on vacation in the Indian village of Malpais. Here they witness wild dance ending with a coyote-masked shaman whipping a young man to death: a blood sacrifice to bring rain and grow corn. After that they meet a young man who talks like a Shakespeare character and tells them that his mother, Linda, is from "The Other Place". The young savage introduces them to Linda who tells Lenina and Bernard about her the strange story of her being kidnapped by Indians at an early age. She spent much of her life in her Reservation where she gave birth to her son, John, the young savage.  \n
++ *Brave New World, 7<sup>th</sup> chapter:* Bernand and Lenina are on vacation in the Indian village of Malpais. Here they witness wild dance ending with a coyote-masked shaman whipping a young man to death: a blood sacrifice to bring rain and grow corn. After that they meet a young man who talks like a Shakespeare character and tells them that his mother, Linda, is from "The Other Place". The young savage introduces them to Linda who tells Lenina and Bernard the story of how she got lost in a storm and the Indians saved her. When she get lost she was pregnant. She spent much of her life in her Reservation where she gave birth to her son, John, the young savage.  \n
 
 + *Nineteen eighty-four, 25<sup>th</sup> chapter:* Winston is inside the ministry of love, and is about to be taken to room 101, the torture and re-education room. He discovers that the Party had been watching him very closely for seven years and that they even have soundtracks and photographs of him and Julia. He realizes the futility of his decision of him to set himself up against the Party. Then O'brien proceeds with the torture that leads to his re-education. This torture consists in his greatest fear: rats. \n
 
@@ -361,7 +360,7 @@ p <- novels_sentiment %>%
   theme_classic()+
   scale_x_continuous(breaks = c(0:9)*4)+
   theme(legend.position = "none",
-        text = element_text(family="Arial"),
+        text = element_text(family = "Arial"),
         axis.text.x = element_text(vjust = 0.5))
 
 ```
@@ -411,7 +410,6 @@ book_lda <- LDA(book_dtm, k = 9, control = list(seed = 1234)) # k = n topics da 
 
 book_topics_beta <- tidy(book_lda, matrix = "beta")
 ```
-
 ```{r topic_modelling_versus_plot, echo=FALSE,   collapse=TRUE, warning=FALSE}
 top_terms <- book_topics_beta %>%
   mutate(word = term, term = reorder_within(term, beta, topic)) %>%
@@ -429,6 +427,7 @@ top_terms %>%
   coord_flip() +
   theme_classic()
 ```
+
 
 ##### How can I assign each topic to a book?
 In order to label the topics that I found above with betas I examinate the per-document-per-topic probabilities, called “gamma”. We notice that all of the topics are uniquely identified ad assigned to a a single chapter each. This makes easier link words to their respective book and give them any meaning.\n

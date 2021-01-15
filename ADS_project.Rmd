@@ -208,8 +208,8 @@ betweenness <- data.frame(betweenness_score = round(b, 3)) %>%
   mutate(v = row_number()) %>%
   full_join(v) %>%
   arrange(desc(betweenness_score)) %>%
-  mutate(word = name) %>%
-  select(word, betweenness_score) %>%
+  mutate(word = name, betweenness_score_normalized = betweenness_score/(123*122)) %>%
+  select(word, betweenness_score, betweenness_score_normalized) %>%
   head()
 
 #pagerank
